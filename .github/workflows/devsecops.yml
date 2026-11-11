@@ -1,0 +1,64 @@
+name: Pipeline DevSecOps (SAST + SCA + SBOM)
+# Esto le dice a GitHub que ejecute el pipeline cada vez que hagas un cambio (push)
+on: [push]
+
+jobs:
+  # ---------------------------------------------------------
+  # TRABAJO 1: SAST con Semgrep
+  # ---------------------------------------------------------
+  sast-semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+      
+      - name: Instalar Semgrep
+        run: pip install semgrep
+        
+      - name: Ejecutar SAST y aplicar Política de Fallo
+        # --config=p/python: Usa reglas para Python
+        # --severity=ERROR: Solo reporta errores graves
+        # --error: POLÍTICA DE FALLO. Si encuentra errores, detiene el pipeline.
+        run: semgrep --config=p/python --severity=ERROR --error .
+
+  # ---------------------------------------------------------
+  # TRABAJO 2: SCA con Dependency-Check y Generación de SBOM
+  # ---------------------------------------------------------
+  sca-sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Instalar generador de SBOM (CycloneDX)
+        run: pip install cyclonedx-bom
+
+      - name: Generar SBOM (Inventario de materiales)
+        # Lee requirements.txt y genera un archivo JSON con el inventario
+        run: cyclonedx-py -r -i requirements.txt -o sbom.json
+
+      - name: Subir SBOM como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-inventario
+          path: sbom.json
+
+      - name: Ejecutar SCA (Dependency-Check) y aplicar Política de Fallo
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'MiAppPython'
+          path: '.'
+          format: 'HTML'
+          # POLÍTICA DE FALLO: --failOnCVSS 7 significa que si encuentra 
+          # una vulnerabilidad con puntuación de 7.0 o más (Alta/Crítica), 
+          # el pipeline FALLARÁ.
+          args: >
+            --failOnCVSS 7
+            --scan .
+            --out reports
+
+      - name: Subir Reporte SCA como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-dependency-check
+          path: reports
