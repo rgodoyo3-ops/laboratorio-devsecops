@@ -1,0 +1,21 @@
+# 1. Usamos una versión actualizada y segura de Drupal
+FROM drupal:10.2-apache
+
+# 2. Instalamos actualizaciones de seguridad del sistema base
+RUN apt-get update && apt-get upgrade -y && apt-get clean
+
+# 3. Copiamos nuestro código de la tienda Café Chapin GT
+COPY . /var/www/html/
+
+# 4. CORRECCIÓN DE SEGURIDAD: No usar el usuario Root (Administrador)
+# Creamos un usuario normal para ejecutar la app
+RUN useradd -m cafeuser && chown -R cafeuser:cafeuser /var/www/html
+USER cafeuser
+
+# 5. CORRECCIÓN DE SEGURIDAD: Agregamos un "Healthcheck"
+# Esto le dice a Docker: "Revisa cada 30 segundos si la web responde"
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost/ || exit 1
+
+# 6. El puerto por defecto de Apache/Drupal
+EXPOSE 80
