@@ -1,0 +1,47 @@
+  sca-scan:
+    name: SCA - Dependency Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=high || true
+          npm audit --json > audit-results.json
+      
+      - name: Upload audit results
+        uses: actions/upload-artifact@v3
+        with:
+          name: npm-audit-results
+          path: audit-results.json
+
+  sca-quality-gate:
+    name: SCA Quality Gate
+    runs-on: ubuntu-latest
+    needs: sca-scan
+    steps:
+      - name: Download audit results
+        uses: actions/download-artifact@v3
+        with:
+          name: npm-audit-results
+
+      - name: Check for critical vulnerabilities
+        run: |
+          # Verificar si hay vulnerabilidades críticas
+          if grep -q '"severity":"critical"' audit-results.json; then
+            echo "Critical vulnerabilities found!"
+            exit 1
+          fi
+          echo "No critical vulnerabilities found"
