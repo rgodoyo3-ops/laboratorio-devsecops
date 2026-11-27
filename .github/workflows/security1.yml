@@ -1,10 +1,27 @@
-  # PASO 5: DAST (Análisis Dinámico con OWASP ZAP)
   zap-dast:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Instalar dependencias
+        run: npm install
+      
+      - name: Iniciar aplicación en segundo plano
+        run: npm start &
+        env:
+          PORT: 3000
+      
+      - name: Esperar a que la aplicación esté lista
+        run: sleep 10
+      
       - name: OWASP ZAP Scan
         uses: zaproxy/action-baseline@v0.9.0
         with:
-          target: https://github.com/moratayamk/cafe-chapin-gt
-          rules_file_name: '.zap/rules.tsv'
+          target: 'http://localhost:3000'
           cmd_options: '-a'
