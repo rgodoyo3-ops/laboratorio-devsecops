@@ -108,4 +108,4 @@
             echo "High or Critical vulnerabilities found in DAST scan!"
             exit 1
           fi
-          echo "DAST scan passed"
+          echo "DAST scan passed"  
