@@ -1,4 +1,4 @@
-  zap-dast:
+  zap-dast
     runs-on: ubuntu-latest
     steps:
       - name: Checkout código
