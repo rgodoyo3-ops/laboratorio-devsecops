@@ -1,0 +1,28 @@
+name: Semgrep SAST Scan
+
+# Define cuándo se debe ejecutar este análisis
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  semgrep:
+    name: Análisis de Seguridad de Código (SAST)
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Paso 1: Descargar tu código en el servidor de GitHub
+      - name: Descargar código (Checkout)
+        uses: actions/checkout@v4
+
+      # Paso 2: Ejecutar Semgrep para buscar vulnerabilidades
+      - name: Ejecutar Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          # Reglas de seguridad que vamos a aplicar
+          config: >-
+            p/owasp-top-ten
+            p/cwe-top-25
+            p/security-audit
